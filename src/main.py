@@ -41,9 +41,19 @@ def main():
 
             train_loader = build_train_loader(train_samples, batch_p=BATCH_P, batch_k=BATCH_K)
 
+            logger = TrainLogger("logs/training_log.csv")
+
             for epoch in range(EPOCHS):
                 loss = train_one_epoch(model, train_loader, optimizer, ce_loss, tri_loss, epoch)
                 print(f"Epoch [{epoch+1}/{EPOCHS}], Loss: {loss:.4f}")
+                
+                #for logging and plotting
+                val_loss = 0
+                rank1, mAP = evaluate(model, test_loader)
+                lr = optimizer.param_groups[0]["lr"] #optional
+                logger.log(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss, rank1=rank1, map_score=mAP, lr=lr)
+
+            logger.plot()
 
             # Save checkpoint
             model_path = f"{args.dataset}_{backbone}.pth"
