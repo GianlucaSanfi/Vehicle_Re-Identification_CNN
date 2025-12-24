@@ -22,9 +22,9 @@ DATASET_NAME
     images (also splitted for train/test)
 ```
 
-both lists.txt are like follows:  
+every line of both lists.txt must be of the form:  
 ```
-    <relative_path> <pid> 
+    <relative_image_path> <pid> 
 ```
 
 * ## NOTE:  
