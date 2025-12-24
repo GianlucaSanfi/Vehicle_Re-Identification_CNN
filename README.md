@@ -2,7 +2,7 @@
 
 * ## INFO  
 The program automatically performs a training on both backbone imagenet neural networks: ResNet-18 and ResNet-50.  
-The parameters can set on which dataset (in the **datasets** folder) operate and wether or not use attention mechanism.  
+The parameters can set on which dataset (in the **datasets** folder) operate and whether or not use attention mechanism.  
 
 * ## Install requirements  
 pip install -r requirements.txt  
