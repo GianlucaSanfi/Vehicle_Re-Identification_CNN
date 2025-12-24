@@ -10,7 +10,7 @@ import random
 # ------------------------------
 # CONFIG
 # ------------------------------
-dataset_root = "data/VeRi776"   # Change if your VeRi776 folder is elsewhere
+dataset_root = "datasets/VeRi776"   # Change if your VeRi776 folder is elsewhere
 train_dir = os.path.join(dataset_root, "image_train")
 query_dir = os.path.join(dataset_root, "image_query")
 gallery_dir = os.path.join(dataset_root, "image_test")  # called image_test in your structure

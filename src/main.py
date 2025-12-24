@@ -7,6 +7,7 @@ from network import ReIDModel
 from train import train_one_epoch
 from evaluate import extract_features, compute_distance_matrix, evaluate_metrics
 from utils import BatchHardTripletLoss, set_seed
+from logger import *
 import torch.nn as nn
 import torch.optim as optim
 import os
@@ -19,6 +20,7 @@ def main():
     parser.add_argument("--dataset", type=str, default="VRU", help="Dataset to use (VRU/VeRi776)")
     parser.add_argument("--train", action="store_true", help="Train models")
     parser.add_argument("--evaluate", action="store_true", help="Evaluate models")
+    parser.add_argument("--attention", action="store_true", help="implemets attention mechanism (CBAM)")
     args = parser.parse_args()
 
     # ------------------------
@@ -34,24 +36,40 @@ def main():
     if args.train:
         for backbone in ["resnet18", "resnet50"]:
             print(f"\nTraining {backbone}...")
-            model = ReIDModel(num_classes=num_pids, backbone=backbone).to(DEVICE)
+            if args.attention:
+                print("🔍 Attention ENABLED")
+            else:
+                print("🔍 Attention DISABLED")
+
+            model = ReIDModel(num_classes=num_pids, backbone=backbone, use_attention=args.attention).to(DEVICE)
             optimizer = optim.Adam(model.parameters(), lr=LR)
             ce_loss = nn.CrossEntropyLoss()
             tri_loss = BatchHardTripletLoss(margin=MARGIN)
 
             train_loader = build_train_loader(train_samples, batch_p=BATCH_P, batch_k=BATCH_K)
 
-            logger = TrainLogger("logs/training_log.csv")
+            exp_name = f"{args.dataset}_{backbone}"
+            if args.attention:
+                exp_name += "_attention"
+
+            logger = TrainLogger(os.path.join("logs", exp_name))
+
+            #logger = TrainLogger("logs/training_log.csv")
+            test_loader = build_test_loader(test_samples, batch_size=64)
+
 
             for epoch in range(EPOCHS):
                 loss = train_one_epoch(model, train_loader, optimizer, ce_loss, tri_loss, epoch)
                 print(f"Epoch [{epoch+1}/{EPOCHS}], Loss: {loss:.4f}")
                 
                 #for logging and plotting
-                val_loss = 0
-                rank1, mAP = evaluate(model, test_loader)
+                features, pids = extract_features(model, test_loader)
+                distmat = compute_distance_matrix(features, features, metric="cosine")
+                mAP, cmc = evaluate_metrics(distmat, pids)
+                rank1 = cmc[0]
+
                 lr = optimizer.param_groups[0]["lr"] #optional
-                logger.log(epoch=epoch + 1, train_loss=train_loss, val_loss=val_loss, rank1=rank1, map_score=mAP, lr=lr)
+                logger.log(epoch=epoch + 1, train_loss=loss, val_loss=0.0, rank1=rank1, map_score=mAP, lr=lr)
 
             logger.plot()
 
@@ -66,7 +84,12 @@ def main():
     if args.evaluate:
         for backbone in ["resnet18", "resnet50"]:
             print(f"\nEvaluating {backbone}...")
-            model = ReIDModel(num_classes=num_pids, backbone=backbone).to(DEVICE)
+            if args.attention:
+                print("Attention ENABLED")
+            else:
+                print("Attention DISABLED")
+
+            model = ReIDModel(num_classes=num_pids, backbone=backbone, use_attention=args.attention).to(DEVICE)
             model_path = f"{args.dataset}_{backbone}.pth"
             if not os.path.exists(model_path):
                 print(f"Model {model_path} not found. Train first!")

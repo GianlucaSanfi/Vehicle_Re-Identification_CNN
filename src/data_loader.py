@@ -19,7 +19,7 @@ class ReIDDataset(Dataset):
 
     def __getitem__(self, idx):
         path, pid = self.samples[idx]
-        print(path)
+        #print(path)
         img = Image.open(path).convert("RGB")
         if self.transform: 
             img = self.transform(img)
@@ -56,7 +56,8 @@ class PKSampler(Sampler):
             batch.extend(chosen)
 
             if len(batch) == self.P * self.K:
-                yield from batch
+                #yield from batch
+                yield batch
                 batch = []
 
     def __len__(self):
@@ -95,14 +96,20 @@ def load_dataset(dataset_name):
         for line in f:
             path, pid = line.strip().split()
             #path = "datasets/"+dataset_name+"/"+path
-            train_samples.append((path, int(pid)))
+            path = path.replace("\\", "/")
+            full_path = f"datasets/{dataset_name}/{path}"
+            #print(full_path)
+            train_samples.append((full_path, int(pid)))
 
     test_samples = []
     with open(test_file) as f:
         for line in f:
             path, pid = line.strip().split()
             #path = "datasets/"+dataset_name+"/"+path         ### adjustment to work with fake dataset (TEST)
-            test_samples.append((path, int(pid)))
+            path = path.replace("\\", "/")
+            full_path = f"datasets/{dataset_name}/{path}"
+            #print(full_path)
+            test_samples.append((full_path, int(pid)))
 
     return train_samples, test_samples
 
