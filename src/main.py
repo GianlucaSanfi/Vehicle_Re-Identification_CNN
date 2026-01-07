@@ -48,11 +48,12 @@ def main():
 
             train_loader = build_train_loader(train_samples, batch_p=BATCH_P, batch_k=BATCH_K)
 
-            exp_name = f"{args.dataset}_{backbone}"
+            #path folder for logs and plots
+            exp_name = f"{args.dataset}_{backbone}_{EPOCHS}ep"
             if args.attention:
                 exp_name += "_attention"
 
-            logger = TrainLogger(os.path.join("logs", exp_name))
+            logger = TrainLogger(os.path.join("logs", exp_name), args.dataset, backbone, EPOCHS, args.attention)
 
             #logger = TrainLogger("logs/training_log.csv")
             test_loader = build_test_loader(test_samples, batch_size=64)
@@ -69,12 +70,16 @@ def main():
                 rank1 = cmc[0]
 
                 lr = optimizer.param_groups[0]["lr"] #optional
-                logger.log(epoch=epoch + 1, train_loss=loss, val_loss=0.0, rank1=rank1, map_score=mAP, lr=lr)
+                logger.log(epoch=epoch + 1, train_loss=loss, val_loss=0.0, rank1=rank1, map_score=mAP)
 
             logger.plot()
 
             # Save checkpoint
-            model_path = f"{args.dataset}_{backbone}.pth"
+            model_path = f"{args.dataset}_{backbone}_{EPOCHS}ep"
+            if args.attention:
+                model_path += "_attention"
+            model_path += ".pth"
+            
             torch.save(model.state_dict(), model_path)
             print(f"Saved {backbone} model to {model_path}")
 
@@ -90,7 +95,11 @@ def main():
                 print("Attention DISABLED")
 
             model = ReIDModel(num_classes=num_pids, backbone=backbone, use_attention=args.attention).to(DEVICE)
-            model_path = f"{args.dataset}_{backbone}.pth"
+            model_path = f"{args.dataset}_{backbone}_{EPOCHS}ep"
+            if args.attention:
+                model_path += "_attention"
+            model_path += ".pth"
+
             if not os.path.exists(model_path):
                 print(f"Model {model_path} not found. Train first!")
                 continue

@@ -55,11 +55,6 @@ class ReIDModel(nn.Module):
     def __init__(self, num_classes, backbone="resnet50", feat_dim=512, use_attention=False):
         super().__init__()
 
-        #use attention
-        self.use_attention = use_attention
-        if self.use_attention:
-            self.attention = CBAM(in_dim)
-
         #choose backbone (CNN for img classification)
         if backbone=="resnet18":
             base = models.resnet18(pretrained=True)
@@ -69,6 +64,11 @@ class ReIDModel(nn.Module):
             in_dim = 2048
         else:
             raise ValueError("backbone must be resnet18 or resnet50")
+        
+        #use attention
+        self.use_attention = use_attention
+        if self.use_attention:
+            self.attention = CBAM(in_dim)
 
         self.backbone = nn.Sequential(*list(base.children())[:-2])
         
@@ -86,7 +86,7 @@ class ReIDModel(nn.Module):
         feat = self.backbone(x)
         if self.use_attention:
             feat = self.attention(feat)
-            
+
         feat = self.gap(feat).view(feat.size(0), -1)
         feat = self.fc(feat)
         feat_bn = self.bnneck(feat)

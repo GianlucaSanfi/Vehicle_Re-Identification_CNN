@@ -91,6 +91,39 @@ def load_dataset(dataset_name):
     train_file = f"datasets/{dataset_name}/train_list.txt"
     test_file  = f"datasets/{dataset_name}/test_list.txt"
 
+    # create unique pids to solve index out of bound #
+    train_raw = []
+    with open(train_file) as f:
+        for line in f:
+            path, pid = line.strip().split()
+            train_raw.append((path, int(pid)))
+
+    # CREATE PID MAPPING
+    unique_pids = sorted(set(pid for _, pid in train_raw))
+    pid2label = {pid: idx for idx, pid in enumerate(unique_pids)}
+
+    # REMAP TRAIN
+    train_samples = []
+    for path, pid in train_raw:
+        path = path.replace("\\", "/")
+        full_path = f"datasets/{dataset_name}/{path}"
+        train_samples.append((full_path, pid2label[pid]))
+
+    # REMAP TEST USING SAME MAPPING 
+    test_samples = []
+    with open(test_file) as f:
+        for line in f:
+            path, pid = line.strip().split()
+            pid = int(pid)
+
+            #if pid not in pid2label:
+            #    continue  # unseen identity (optional)
+
+            path = path.replace("\\", "/")
+            full_path = f"datasets/{dataset_name}/{path}"
+            test_samples.append((full_path, pid))
+
+    """
     train_samples = []
     with open(train_file) as f:
         for line in f:
@@ -111,6 +144,7 @@ def load_dataset(dataset_name):
             #print(full_path)
             test_samples.append((full_path, int(pid)))
 
+    """
     return train_samples, test_samples
 
 def build_train_loader(samples, batch_p=BATCH_P, batch_k=BATCH_K):

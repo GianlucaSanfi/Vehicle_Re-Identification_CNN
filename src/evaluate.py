@@ -3,6 +3,8 @@ import numpy as np
 from tqdm import tqdm
 
 def extract_features(model, loader):
+    print("Extracting features...")
+
     model.eval()
     feats, pids = [], []
 

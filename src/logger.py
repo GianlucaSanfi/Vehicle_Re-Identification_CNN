@@ -8,8 +8,12 @@ class TrainLogger:
     Logs training/validation metrics and produces plots.
     Keeps everything organized in a single experiment folder.
     """
-    def __init__(self, save_dir):
+    def __init__(self, save_dir, dataset, backbone, epochs, attention):
         self.save_dir = save_dir
+        self.dataset = dataset
+        self.backbone = backbone
+        self.epochs = epochs
+        self.attention = attention
         os.makedirs(save_dir, exist_ok=True)
 
         self.log_file = os.path.join(save_dir, "training_log.csv")
@@ -58,10 +62,17 @@ class TrainLogger:
         plt.plot(self.history["epoch"], self.history["val_loss"], label="Validation Loss")
         plt.xlabel("Epoch")
         plt.ylabel("Loss")
-        plt.title("Training & Validation Loss")
+        tit = "Training & Validation Loss {dataset} {backbone}"
+        if attention:
+            tit += " with attention"
+        plt.title(tit)
         plt.legend()
         plt.grid(True)
-        plt.savefig(os.path.join(self.save_dir, "loss_curve.png"))
+        name_pt = "loss_curve_{dataset}_{backbone}_{epochs}ep"
+        if attention:
+            name_pt += "_attention"
+        name_pt += ".png"
+        plt.savefig(os.path.join(self.save_dir, name_pt))
         plt.close()
 
         # RANK-1 AND mAP CURVE
@@ -70,8 +81,15 @@ class TrainLogger:
         plt.plot(self.history["epoch"], self.history["map"], label="mAP")
         plt.xlabel("Epoch")
         plt.ylabel("Score")
-        plt.title("Evaluation Metrics")
+        tit = "Evaluation Metrics {dataset} {backbone}"
+        if attention:
+            tit += " with attention"
+        plt.title(tit)
         plt.legend()
         plt.grid(True)
-        plt.savefig(os.path.join(self.save_dir, "metrics_curve.png"))
+        name_pt = "metrics_curve_{dataset}_{backbone}_{epochs}ep"
+        if attention:
+            name_pt += "_attention"
+        name_pt += ".png"
+        plt.savefig(os.path.join(self.save_dir, name_pt))
         plt.close()
