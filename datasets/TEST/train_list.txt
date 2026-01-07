@@ -1,5 +1,0 @@
-images/vehicle_1.jpg 1
-images/vehicle_2.jpg 2
-images/vehicle_3.jpg 3
-images/vehicle_4.jpg 4
-images/vehicle_5.jpg 5
