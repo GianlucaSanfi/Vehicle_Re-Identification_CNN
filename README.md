@@ -10,7 +10,7 @@ pip install -r requirements.txt
 ```
 ### NOTE (if GPU available):  
 ```
-    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118<br>
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118<br>
 ```
 
 * ## train CNN on VRU dataset with ResNet-18 and ResNet-50 to extract vehicle class features and distance metrics<br>
@@ -30,8 +30,18 @@ DATASET_NAME
 
 every line of both lists.txt must be of the form:  
 ```
-    <relative_image_path> <pid> 
+<relative_image_path> <pid> 
 ```
+
+The suite is provided with two scripts that take as input the available datasets and make them compatible with the expected structure, creating the train and test lists.  
+### VRU  
+```
+python create_VRU_lists.py
+```  
+### VeRi-776  
+```
+python create_veri776_lists.py
+```  
 
 * ## NOTE:  
 Datasets available at the following links

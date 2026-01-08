@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset, DataLoader, Sampler
 from PIL import Image
 import random
+from collections import defaultdict
 import numpy as np
 from torchvision import transforms
 from globals import IMG_HEIGHT, IMG_WIDTH, BATCH_P, BATCH_K
@@ -83,6 +84,28 @@ test_tf = transforms.Compose([
 # ------------------------
 # Dataset loaders
 # ------------------------
+def split_query_gallery(samples, num_query_per_id=1):
+    """
+    Split test samples into query and gallery sets
+    """
+    pid_dict = defaultdict(list)
+    for path, pid in samples:
+        pid_dict[pid].append(path)
+
+    query, gallery = [], []
+
+    for pid, paths in pid_dict.items():
+        random.shuffle(paths)
+        query_paths = paths[:num_query_per_id]
+        gallery_paths = paths[num_query_per_id:]
+
+        for p in query_paths:
+            query.append((p, pid))
+        for p in gallery_paths:
+            gallery.append((p, pid))
+
+    return query, gallery
+    
 def load_dataset(dataset_name):
     """
     Returns train_samples, test_samples

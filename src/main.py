@@ -2,7 +2,7 @@
 import argparse
 import torch
 from globals import DEVICE, EPOCHS, LR, BATCH_P, BATCH_K, MARGIN
-from data_loader import load_dataset, build_train_loader, build_test_loader
+from data_loader import load_dataset, build_train_loader, build_test_loader, split_query_gallery
 from network import ReIDModel
 from train import train_one_epoch
 from evaluate import extract_features, compute_distance_matrix, evaluate_metrics
@@ -37,9 +37,9 @@ def main():
         for backbone in ["resnet18", "resnet50"]:
             print(f"\nTraining {backbone}...")
             if args.attention:
-                print("🔍 Attention ENABLED")
+                print("Attention ENABLED")
             else:
-                print("🔍 Attention DISABLED")
+                print("Attention DISABLED")
 
             model = ReIDModel(num_classes=num_pids, backbone=backbone, use_attention=args.attention).to(DEVICE)
             optimizer = optim.Adam(model.parameters(), lr=LR)
@@ -54,19 +54,23 @@ def main():
                 exp_name += "_attention"
 
             logger = TrainLogger(os.path.join("logs", exp_name), args.dataset, backbone, EPOCHS, args.attention)
-
-            #logger = TrainLogger("logs/training_log.csv")
-            test_loader = build_test_loader(test_samples, batch_size=64)
-
+            
+            ''' split query and gallery of test-set'''
+            #test_loader = build_test_loader(test_samples, batch_size=64)
+            query_samples, gallery_samples = split_query_gallery(test_samples)
+            query_loader = build_test_loader(query_samples, batch_size=64)
+            gallery_loader = build_test_loader(gallery_samples, batch_size=64)
 
             for epoch in range(EPOCHS):
                 loss = train_one_epoch(model, train_loader, optimizer, ce_loss, tri_loss, epoch)
                 print(f"Epoch [{epoch+1}/{EPOCHS}], Loss: {loss:.4f}")
                 
-                #for logging and plotting
-                features, pids = extract_features(model, test_loader)
-                distmat = compute_distance_matrix(features, features, metric="cosine")
-                mAP, cmc = evaluate_metrics(distmat, pids)
+                #for evaluation (query/gallery), logging and plotting 
+
+                query_features, q_pids = extract_features(model, query_loader)
+                gallery_features, g_pids = extract_features(model, gallery_loader)
+                distmat = compute_distance_matrix(query_features, gallery_features, metric="cosine")
+                mAP, cmc = evaluate_metrics(distmat, q_pids, g_pids)
                 rank1 = cmc[0]
 
                 lr = optimizer.param_groups[0]["lr"] #optional
@@ -105,17 +109,24 @@ def main():
                 continue
             model.load_state_dict(torch.load(model_path, map_location=DEVICE))
 
-            test_loader = build_test_loader(test_samples, batch_size=64)
-            features, pids = extract_features(model, test_loader)
+            #test_loader = build_test_loader(test_samples, batch_size=64)
+            query_samples, gallery_samples = split_query_gallery(test_samples)
+            query_loader = build_test_loader(query_samples, batch_size=64)
+            gallery_loader = build_test_loader(gallery_samples, batch_size=64)
+            #features, pids = extract_features(model, test_loader)
+            query_features, q_pids = extract_features(model, query_loader)
+            gallery_features, g_pids = extract_features(model, gallery_loader)
+            
+            #mAP, cmc = evaluate_metrics(distmat, q_pids, g_pids)
 
             # Compute Cosine Distance
-            dist_cos = compute_distance_matrix(features, features, metric="cosine")
-            mAP_cos, cmc_cos = evaluate_metrics(dist_cos, pids)
+            dist_cos = compute_distance_matrix(query_features, gallery_features, metric="cosine")
+            mAP_cos, cmc_cos = evaluate_metrics(dist_cos, q_pids, g_pids)
             print(f"[{backbone}] Cosine Distance: mAP={mAP_cos:.4f}, Rank-1={cmc_cos[0]:.4f}")
 
             # Compute Euclidean Distance
-            dist_euc = compute_distance_matrix(features, features, metric="euclidean")
-            mAP_euc, cmc_euc = evaluate_metrics(dist_euc, pids)
+            dist_euc = compute_distance_matrix(query_features, gallery_features, metric="euclidean")
+            mAP_euc, cmc_euc = evaluate_metrics(dist_euc, q_pids, g_pids)
             print(f"[{backbone}] Euclidean Distance: mAP={mAP_euc:.4f}, Rank-1={cmc_euc[0]:.4f}")
 
 if __name__ == "__main__":

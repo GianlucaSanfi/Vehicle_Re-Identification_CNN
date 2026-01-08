@@ -56,6 +56,36 @@ class TrainLogger:
         self.history["map"].append(map_score)
 
     def plot(self):
+
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+        # LEFT: LOSS CURVES
+        axes[0].plot(self.history["epoch"], self.history["train_loss"], label="Train Loss")
+        axes[0].plot(self.history["epoch"], self.history["val_loss"], label="Validation Loss")
+        axes[0].set_xlabel("Epoch")
+        axes[0].set_ylabel("Loss")
+        axes[0].set_title("Training & Validation Loss")
+        axes[0].legend()
+        axes[0].grid(True)
+
+        # RIGHT: METRICS
+        axes[1].plot(self.history["epoch"], self.history["rank1"], label="Rank-1")
+        axes[1].plot(self.history["epoch"], self.history["map"], label="mAP")
+        axes[1].set_xlabel("Epoch")
+        axes[1].set_ylabel("Score")
+        axes[1].set_title("Evaluation Metrics")
+        axes[1].legend()
+        axes[1].grid(True)
+
+        plt.tight_layout()
+        name_pt = "training_summary_{self.dataset}_{self.backbone}_{self.epochs}ep"
+        if self.attention:
+            name_pt += "_attention"
+        name_pt += ".png"
+        plt.savefig(os.path.join(self.save_dir, name_pt))
+        plt.close()
+
+        """
         # LOSS CURVE
         plt.figure(figsize=(8, 5))
         plt.plot(self.history["epoch"], self.history["train_loss"], label="Train Loss")
@@ -93,3 +123,5 @@ class TrainLogger:
         name_pt += ".png"
         plt.savefig(os.path.join(self.save_dir, name_pt))
         plt.close()
+
+        """
