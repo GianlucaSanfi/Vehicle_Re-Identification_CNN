@@ -8,12 +8,13 @@ class TrainLogger:
     Logs training/validation metrics and produces plots.
     Keeps everything organized in a single experiment folder.
     """
-    def __init__(self, save_dir, dataset, backbone, epochs, attention):
+    def __init__(self, save_dir, dataset, backbone, epochs, attention, no_eval):
         self.save_dir = save_dir
         self.dataset = dataset
         self.backbone = backbone
         self.epochs = epochs
         self.attention = attention
+        self.no_eval = no_eval
         os.makedirs(save_dir, exist_ok=True)
 
         self.log_file = os.path.join(save_dir, "training_log.csv")
@@ -57,71 +58,53 @@ class TrainLogger:
 
     def plot(self):
 
-        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        if self.no_eval:
+            # LOSS CURVE
+            plt.figure(figsize=(8, 5))
+            plt.plot(self.history["epoch"], self.history["train_loss"], label="Train Loss")
+            plt.plot(self.history["epoch"], self.history["val_loss"], label="Validation Loss")
+            plt.xlabel("Epoch")
+            plt.ylabel("Loss")
+            tit = "Training & Validation Loss"
+            if attention:
+                tit += " with attention"
+            plt.title(tit)
+            plt.legend()
+            plt.grid(True)
+            name_pt = f"training_summary_{self.dataset}_{self.backbone}_{self.epochs}ep"
+            if self.attention:
+                name_pt += "_attention"
+            name_pt += "_NoEv.png"
+            plt.savefig(os.path.join(self.save_dir, name_pt))
+            plt.close()
 
-        # LEFT: LOSS CURVES
-        axes[0].plot(self.history["epoch"], self.history["train_loss"], label="Train Loss")
-        axes[0].plot(self.history["epoch"], self.history["val_loss"], label="Validation Loss")
-        axes[0].set_xlabel("Epoch")
-        axes[0].set_ylabel("Loss")
-        axes[0].set_title("Training & Validation Loss")
-        axes[0].legend()
-        axes[0].grid(True)
 
-        # RIGHT: METRICS
-        axes[1].plot(self.history["epoch"], self.history["rank1"], label="Rank-1")
-        axes[1].plot(self.history["epoch"], self.history["map"], label="mAP")
-        axes[1].set_xlabel("Epoch")
-        axes[1].set_ylabel("Score")
-        axes[1].set_title("Evaluation Metrics")
-        axes[1].legend()
-        axes[1].grid(True)
+        else:
+            fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-        plt.tight_layout()
-        name_pt = "training_summary_{self.dataset}_{self.backbone}_{self.epochs}ep"
-        if self.attention:
-            name_pt += "_attention"
-        name_pt += ".png"
-        plt.savefig(os.path.join(self.save_dir, name_pt))
-        plt.close()
+            # LEFT: LOSS CURVES
+            axes[0].plot(self.history["epoch"], self.history["train_loss"], label="Train Loss")
+            axes[0].plot(self.history["epoch"], self.history["val_loss"], label="Validation Loss")
+            axes[0].set_xlabel("Epoch")
+            axes[0].set_ylabel("Loss")
+            axes[0].set_title("Training & Validation Loss")
+            axes[0].legend()
+            axes[0].grid(True)
 
-        """
-        # LOSS CURVE
-        plt.figure(figsize=(8, 5))
-        plt.plot(self.history["epoch"], self.history["train_loss"], label="Train Loss")
-        plt.plot(self.history["epoch"], self.history["val_loss"], label="Validation Loss")
-        plt.xlabel("Epoch")
-        plt.ylabel("Loss")
-        tit = "Training & Validation Loss {dataset} {backbone}"
-        if attention:
-            tit += " with attention"
-        plt.title(tit)
-        plt.legend()
-        plt.grid(True)
-        name_pt = "loss_curve_{dataset}_{backbone}_{epochs}ep"
-        if attention:
-            name_pt += "_attention"
-        name_pt += ".png"
-        plt.savefig(os.path.join(self.save_dir, name_pt))
-        plt.close()
+            # RIGHT: METRICS
+            axes[1].plot(self.history["epoch"], self.history["rank1"], label="Rank-1")
+            axes[1].plot(self.history["epoch"], self.history["map"], label="mAP")
+            axes[1].set_xlabel("Epoch")
+            axes[1].set_ylabel("Score")
+            axes[1].set_title("Evaluation Metrics")
+            axes[1].legend()
+            axes[1].grid(True)
 
-        # RANK-1 AND mAP CURVE
-        plt.figure(figsize=(8, 5))
-        plt.plot(self.history["epoch"], self.history["rank1"], label="Rank-1")
-        plt.plot(self.history["epoch"], self.history["map"], label="mAP")
-        plt.xlabel("Epoch")
-        plt.ylabel("Score")
-        tit = "Evaluation Metrics {dataset} {backbone}"
-        if attention:
-            tit += " with attention"
-        plt.title(tit)
-        plt.legend()
-        plt.grid(True)
-        name_pt = "metrics_curve_{dataset}_{backbone}_{epochs}ep"
-        if attention:
-            name_pt += "_attention"
-        name_pt += ".png"
-        plt.savefig(os.path.join(self.save_dir, name_pt))
-        plt.close()
+            plt.tight_layout()
+            name_pt = f"training_summary_{self.dataset}_{self.backbone}_{self.epochs}ep"
+            if self.attention:
+                name_pt += "_attention"
+            name_pt += ".png"
+            plt.savefig(os.path.join(self.save_dir, name_pt))
+            plt.close()
 
-        """

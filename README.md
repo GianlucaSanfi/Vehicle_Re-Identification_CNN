@@ -14,10 +14,10 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 ```
 
 * ## train CNN on VRU dataset with ResNet-18 and ResNet-50 to extract vehicle class features and distance metrics<br>
-USE (python src/main.py --dataset [DATASET] --[train | evaluate]) {--attention}:  
+USE (python src/main.py --dataset [DATASET] --[train | evaluate]) {--attention} {--no_eval}:  
 ```
-python src/main.py --dataset VRU --train --attention
-python src/main.py --dataset VRU --evaluate
+python src/main.py --dataset VRU --train --attention --no_eval
+python src/main.py --dataset VRU --evaluate --attention
 ```
 
 * ## Datasets are expected to have the structure:    

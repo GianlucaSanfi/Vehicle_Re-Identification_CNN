@@ -20,7 +20,8 @@ def main():
     parser.add_argument("--dataset", type=str, default="VRU", help="Dataset to use (VRU/VeRi776)")
     parser.add_argument("--train", action="store_true", help="Train models")
     parser.add_argument("--evaluate", action="store_true", help="Evaluate models")
-    parser.add_argument("--attention", action="store_true", help="implemets attention mechanism (CBAM)")
+    parser.add_argument("--attention", action="store_true", help="Implemets attention mechanism (CBAM)")
+    parser.add_argument("--no_eval", action="store_true", help="Do NOT evaluate during training")
     args = parser.parse_args()
 
     # ------------------------
@@ -40,6 +41,8 @@ def main():
                 print("Attention ENABLED")
             else:
                 print("Attention DISABLED")
+            if args.no_eval:
+                print("NO EVALUATION")
 
             model = ReIDModel(num_classes=num_pids, backbone=backbone, use_attention=args.attention).to(DEVICE)
             optimizer = optim.Adam(model.parameters(), lr=LR)
@@ -53,7 +56,8 @@ def main():
             if args.attention:
                 exp_name += "_attention"
 
-            logger = TrainLogger(os.path.join("logs", exp_name), args.dataset, backbone, EPOCHS, args.attention)
+            logger = TrainLogger(os.path.join("logs", exp_name), args.dataset, backbone, EPOCHS, args.attention, args.no_eval)
+            
             
             ''' split query and gallery of test-set'''
             #test_loader = build_test_loader(test_samples, batch_size=64)
@@ -66,15 +70,17 @@ def main():
                 print(f"Epoch [{epoch+1}/{EPOCHS}], Loss: {loss:.4f}")
                 
                 #for evaluation (query/gallery), logging and plotting 
+                if args.no_eval:
+                    logger.log(epoch=epoch + 1, train_loss=loss, val_loss=0.0, rank1=0, map_score=0)
 
-                query_features, q_pids = extract_features(model, query_loader)
-                gallery_features, g_pids = extract_features(model, gallery_loader)
-                distmat = compute_distance_matrix(query_features, gallery_features, metric="cosine")
-                mAP, cmc = evaluate_metrics(distmat, q_pids, g_pids)
-                rank1 = cmc[0]
+                else:
+                    query_features, q_pids = extract_features(model, query_loader)
+                    gallery_features, g_pids = extract_features(model, gallery_loader)
+                    distmat = compute_distance_matrix(query_features, gallery_features, metric="cosine")
+                    mAP, cmc = evaluate_metrics(distmat, q_pids, g_pids)
+                    rank1 = cmc[0]
 
-                lr = optimizer.param_groups[0]["lr"] #optional
-                logger.log(epoch=epoch + 1, train_loss=loss, val_loss=0.0, rank1=rank1, map_score=mAP)
+                    logger.log(epoch=epoch + 1, train_loss=loss, val_loss=0.0, rank1=rank1, map_score=mAP)
 
             logger.plot()
 
