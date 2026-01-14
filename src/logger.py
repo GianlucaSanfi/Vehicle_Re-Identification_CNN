@@ -1,7 +1,8 @@
 import csv
 import os
+import shutil
 import matplotlib.pyplot as plt
-
+from globals import EPOCHS
 
 class TrainLogger:
     """
@@ -16,18 +17,7 @@ class TrainLogger:
         self.attention = attention
         self.no_eval = no_eval
         os.makedirs(save_dir, exist_ok=True)
-
-        self.log_file = os.path.join(save_dir, "training_log.csv")
-
-        with open(self.log_file, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                "epoch",
-                "train_loss",
-                "val_loss",
-                "rank1",
-                "map"
-            ])
+        self.log_file = os.path.join(save_dir, "training_log.csv")  ## destination file
 
         self.history = {
             "epoch": [],
@@ -36,6 +26,43 @@ class TrainLogger:
             "rank1": [],
             "map": []
         }
+
+
+        if not (epochs == EPOCHS):
+            #PROGRESSIVE TRAINING ENABLED
+            source_file = f"logs/{dataset}_{backbone}_{EPOCHS}ep"
+            if attention:
+                source_file += "_attention"
+
+            if not os.path.exists(source_file):
+                print("source log file not found, cannot retrieve past training info")
+                
+            else:
+                shutil.copy(source_file, self.log_file)
+                #copy new csv from previous training, populate history
+                with open(self.log_file, mode="r", newline="", encoding="utf-8") as file:
+                    reader = csv.reader(file)
+                    for row in reader:
+                        self.history["epoch"].append(int(row[0]))
+                        self.history["train_loss"].append(float(row[1]))
+                        self.history["val_loss"].append(float(row[2]))
+                        self.history["rank1"].append(float(row[3]))
+                        self.history["map"].append(float(row[4]))
+            
+        else:
+            #NORMAL TRAINING
+            #new csv
+            with open(self.log_file, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    "epoch",
+                    "train_loss",
+                    "val_loss",
+                    "rank1",
+                    "map"
+                ])
+
+            
 
     def log(self, epoch, train_loss, val_loss, rank1, map_score):
         # Save into CSV

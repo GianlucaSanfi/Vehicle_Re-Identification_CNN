@@ -14,11 +14,16 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 ```
 
 * ## train CNN on VRU dataset with ResNet-18 and ResNet-50 to extract vehicle class features and distance metrics<br>
-USE (python src/main.py --dataset [DATASET] --[train | evaluate]) {--attention} {--no_eval}:  
+USE (python src/main.py --dataset **`<DATASET>`** --[train | evaluate]) {--attention} {--no_eval} {--PROGRESSIVE --EPOCHS **`<EPOCHS>`**}:  
 ```
 python src/main.py --dataset VRU --train --attention --no_eval
 python src/main.py --dataset VRU --evaluate --attention
 ```
+If we have a model trained with a number of epochs (must be set in __globals.py__) and we want to train such model with more epochs, use PROGRESSIVE specifying the number of additional EPOCHS to train it:  
+```
+python src/main.py --dataset VRU --train --attention --no_eval --PROGRESSIVE --EPOCHS 5
+```
+
 
 * ## Datasets are expected to have the structure:    
 ```
