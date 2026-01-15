@@ -40,8 +40,7 @@ def main():
     # ------------------------
     if (args.train and (not args.PROGRESSIVE)) :
         ### TRAINING ###
-        #for backbone in ["resnet18", "resnet50"]:
-        for backbone in ["resnet50"]:
+        for backbone in ["resnet18", "resnet50"]:
             print(f"\nTraining {backbone}...")
             if args.attention:
                 print("Attention ENABLED")
