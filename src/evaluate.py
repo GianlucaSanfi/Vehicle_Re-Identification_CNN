@@ -28,20 +28,38 @@ def compute_distance_matrix(qf, gf, metric='cosine'):
         distmat = 1 - np.dot(qf_norm, gf_norm.T)
     
     elif metric=="euclidean":
-        #distmap = euclidean_chunked(qf, gf)
-        distmat = np.sqrt(np.sum((qf[:, None] - gf[None, :])**2, axis=2))
+        distmat = euclidean_chunked(qf, gf)
+        #distmat = np.sqrt(np.sum((qf[:, None] - gf[None, :])**2, axis=2))
     else:
         raise ValueError("metric must be 'cosine' or 'euclidean'")
     return distmat
 
 ## memory safe euclidean distance (chunked distance)
 def euclidean_chunked(qf, gf, chunk=500):
+    qf = qf.astype(np.float32)
+    gf = gf.astype(np.float32)
+
+    gf_sq = np.sum(gf ** 2, axis=1)  # (Ng,)
+    distma = []
+
+    for i in range(0, len(qf), chunk):
+        q = qf[i:i + chunk]
+        q_sq = np.sum(q ** 2, axis=1, keepdims=True)  # (chunk, 1)
+
+        # (chunk, Ng)
+        dist = q_sq + gf_sq - 2 * np.dot(q, gf.T)
+        dist = np.maximum(dist, 0.0)  # numerical stability
+        distma.append(np.sqrt(dist))
+
+    return np.vstack(distma)
+    """
+
     dist = []
     for i in range(0, len(qf), chunk):
         d = np.sqrt(np.sum((qf[i:i+chunk, None] - gf[None, :])**2, axis=2))
         dist.append(d)
     return np.vstack(dist)
-
+    """
 
 def evaluate_metrics(distmat, q_pids, g_pids):
     num_q = distmat.shape[0]

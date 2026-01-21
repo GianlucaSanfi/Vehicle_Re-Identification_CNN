@@ -33,6 +33,7 @@ class TrainLogger:
             source_file = f"logs/{dataset}_{backbone}_{EPOCHS}ep"
             if attention:
                 source_file += "_attention"
+            source_file += "/training_log.csv"
 
             if not os.path.exists(source_file):
                 print("source log file not found, cannot retrieve past training info")
@@ -40,9 +41,13 @@ class TrainLogger:
             else:
                 shutil.copy(source_file, self.log_file)
                 #copy new csv from previous training, populate history
-                with open(self.log_file, mode="r", newline="", encoding="utf-8") as file:
+                with open(self.log_file, mode="r", newline="") as file:
                     reader = csv.reader(file)
+                    i = 0
                     for row in reader:
+                        if i == 0:
+                            i+=1
+                            continue
                         self.history["epoch"].append(int(row[0]))
                         self.history["train_loss"].append(float(row[1]))
                         self.history["val_loss"].append(float(row[2]))

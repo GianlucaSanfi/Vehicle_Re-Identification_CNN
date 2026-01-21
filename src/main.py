@@ -93,15 +93,18 @@ def main():
             model_path = f"{args.dataset}_{backbone}_{EPOCHS}ep"
             if args.attention:
                 model_path += "_attention"
+            model_param = model_path + "_par.pth" 
             model_path += ".pth"
+
             
             torch.save(model.state_dict(), model_path)
+            torch.save(optimizer.state_dict(), model_param)
             print(f"Saved {backbone} model to {model_path}")
 
     elif (args.train and args.PROGRESSIVE) :
         #### TRAINING PROGRESSIVE ###
         for backbone in ["resnet18", "resnet50"]:
-            print(f"\n PROGRESSIVE Training {backbone} other {args.EPOCHS} epochs...")
+            print(f"\nPROGRESSIVE Training {backbone} other {args.EPOCHS} epochs...")
             if args.attention:
                 print("Attention ENABLED")
             else:
@@ -113,6 +116,7 @@ def main():
             model_path = f"{args.dataset}_{backbone}_{EPOCHS}ep"
             if args.attention:
                 model_path += "_attention"
+            model_param = model_path + "_par.pth" 
             model_path += ".pth"
 
             if not os.path.exists(model_path):
@@ -121,6 +125,9 @@ def main():
             model.load_state_dict(torch.load(model_path, map_location=DEVICE))
 
             optimizer = optim.Adam(model.parameters(), lr=LR)
+            if os.path.exists(model_param):
+                optimizer.load_state_dict(torch.load(model_param, map_location=DEVICE))
+                print("Loading optimizer state")
             ce_loss = nn.CrossEntropyLoss()
             tri_loss = BatchHardTripletLoss(margin=MARGIN)
 
@@ -164,9 +171,11 @@ def main():
             model_path = f"{args.dataset}_{backbone}_{EPOCHS + int(args.EPOCHS)}ep"
             if args.attention:
                 model_path += "_attention"
+            model_param = model_path + "_par.pth" 
             model_path += ".pth"
             
             torch.save(model.state_dict(), model_path)
+            torch.save(optimizer.state_dict(), model_param)
             print(f"Saved {backbone} model to {model_path}")
  
     # ------------------------
@@ -210,6 +219,19 @@ def main():
             dist_euc = compute_distance_matrix(query_features, gallery_features, metric="euclidean")
             mAP_euc, cmc_euc = evaluate_metrics(dist_euc, q_pids, g_pids)
             print(f"[{backbone}] Euclidean Distance: mAP={mAP_euc:.4f}, Rank-1={cmc_euc[0]:.4f}")
+
+            with open("eval_result.csv", "a+", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    "dataset: " + args.dataset,
+                    "backbone: " + backbone,
+                    "epochs: " + str(EPOCHS),
+                    "attention: " + str(args.attention),
+                    "rank1 cos: " + "{:.4f}".format(cmc_cos[0]),
+                    "mAP cos: " + "{:.4f}".format(mAP_cos),
+                    "rank1 euc: " + "{:.4f}".format(cmc_euc[0]),
+                    "mAP euc: " + "{:.4f}".format(mAP_euc)
+                ])
 
 if __name__ == "__main__":
     main()
