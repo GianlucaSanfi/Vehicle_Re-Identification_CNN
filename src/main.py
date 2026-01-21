@@ -25,14 +25,21 @@ def main():
 
     parser.add_argument("--PROGRESSIVE", action="store_true", help="USE EXISTING MODEL TO EXPAND TRAINING")
     parser.add_argument("--EPOCHS", type=str, default="", help="NUMBER OF EPOCHS TO TRAIN")
+    parser.add_argument("--ON_DATASET", type=str, default="", help="Evaluate model on specific dataset")
 
     args = parser.parse_args()
 
     # ------------------------
     # Load Dataset
     # ------------------------
-    print(f"Loading dataset: {args.dataset}")
-    train_samples, test_samples = load_dataset(args.dataset)
+    train_samples = 0
+    test_samples = 0
+    if args.ON_DATASET == "" or args.train :
+        print(f"Loading dataset: {args.dataset}")
+        train_samples, test_samples = load_dataset(args.dataset)
+    else:
+        print(f"Loading dataset {args.ON_DATASET} for evaluation")
+        train_samples, test_samples = load_dataset(args.ON_DATASET)
     num_pids = len(set(pid for _, pid in train_samples))
 
     # ------------------------
@@ -198,7 +205,15 @@ def main():
             if not os.path.exists(model_path):
                 print(f"Model {model_path} not found. Train first!")
                 continue
-            model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+            if not args.ON_DATASET == "":
+                # ignore classifier weights dependant of the training dataset
+                state_dict = torch.load(model_path, map_location=DEVICE)
+                keys_to_remove = [k for k in state_dict.keys() if k.startswith("classifier.")]
+                for k in keys_to_remove:
+                    del state_dict[k]
+                model.load_state_dict(state_dict, strict=False)
+            else:
+                model.load_state_dict(torch.load(model_path, map_location=DEVICE))
 
             #test_loader = build_test_loader(test_samples, batch_size=64)
             query_samples, gallery_samples = split_query_gallery(test_samples)
@@ -222,16 +237,29 @@ def main():
 
             with open("eval_result.csv", "a+", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerow([
-                    "dataset: " + args.dataset,
-                    "backbone: " + backbone,
-                    "epochs: " + str(EPOCHS),
-                    "attention: " + str(args.attention),
-                    "rank1 cos: " + "{:.4f}".format(cmc_cos[0]),
-                    "mAP cos: " + "{:.4f}".format(mAP_cos),
-                    "rank1 euc: " + "{:.4f}".format(cmc_euc[0]),
-                    "mAP euc: " + "{:.4f}".format(mAP_euc)
-                ])
+                if not args.ON_DATASET == "":
+                    writer.writerow([
+                        "dataset: " + args.dataset,
+                        "backbone: " + backbone,
+                        "epochs: " + str(EPOCHS),
+                        "attention: " + str(args.attention),
+                        "rank1 cos: " + "{:.4f}".format(cmc_cos[0]),
+                        "mAP cos: " + "{:.4f}".format(mAP_cos),
+                        "rank1 euc: " + "{:.4f}".format(cmc_euc[0]),
+                        "mAP euc: " + "{:.4f}".format(mAP_euc),
+                        "ON DATASET: " + args.ON_DATASET
+                    ])
+                else:
+                    writer.writerow([
+                        "dataset: " + args.dataset,
+                        "backbone: " + backbone,
+                        "epochs: " + str(EPOCHS),
+                        "attention: " + str(args.attention),
+                        "rank1 cos: " + "{:.4f}".format(cmc_cos[0]),
+                        "mAP cos: " + "{:.4f}".format(mAP_cos),
+                        "rank1 euc: " + "{:.4f}".format(cmc_euc[0]),
+                        "mAP euc: " + "{:.4f}".format(mAP_euc)
+                    ])
 
 if __name__ == "__main__":
     main()

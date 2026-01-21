@@ -13,16 +13,31 @@ pip install -r requirements.txt
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118<br>
 ```
 
-* ## train CNN on VRU dataset with ResNet-18 and ResNet-50 to extract vehicle class features and distance metrics<br>
-USE (python src/main.py --dataset **`<DATASET>`** --[train | evaluate]) {--attention} {--no_eval} {--PROGRESSIVE --EPOCHS **`<EPOCHS>`**}:  
+* ## Use of the system  
+(**NOTE**: the number of epochs is set in __globals.py__ file)  
+
+__python src/main.py --dataset **`<DATASET>`** --[train | evaluate] {--attention} {--no_eval} {--PROGRESSIVE --EPOCHS **`<EPOCHS>`**} {--ON_DATASET **`<EVAL_DATASET>`**}__  
+
+to train (evaluate) the ResNet-18 and ResNet-50 models on a specific dataset with the fixed number of epochs, use:  
 ```
 python src/main.py --dataset VRU --train --attention --no_eval
 python src/main.py --dataset VRU --evaluate --attention
 ```
-If we have a model trained with a number of epochs (must be set in __globals.py__) and we want to train such model with more epochs, use PROGRESSIVE specifying the number of additional EPOCHS to train it:  
+The flag **no_eval** disengages the __Extended Evaluation__ during training. The evaluation metrics will be generated only during evaluation phase.  
+
+If we have a model trained with a number of epochs (must be set in __globals.py__) and we want to train such model with more epochs, use **PROGRESSIVE** specifying the number of additional EPOCHS to train it.  
+__(If the model does not exist it generates an error)__  
+__(If the parameters of the existing model do not exist, it restart the original parameters)__  
+e.g. train with 5 more epochs:  
 ```
 python src/main.py --dataset VRU --train --attention --no_eval --PROGRESSIVE --EPOCHS 5
 ```
+**Cross-Dataset Evaluation function**    
+If we want to evaluate the trained model on a specific dataset, use **ON_DATASET** listing the desired set to use.  
+e.g. evaluate on VeRi776 the model trained on VRU:  
+```
+python src/main.py --dataset VRU --evaluate --attention --ON_DATASET VeRi776
+``` 
 
 
 * ## Datasets are expected to have the structure:    
@@ -30,7 +45,7 @@ python src/main.py --dataset VRU --train --attention --no_eval --PROGRESSIVE --E
 DATASET_NAME
     train_list.txt
     test_list.txt
-    images (also splitted for train/test)
+    images (folder with images used for train/test)
 ```
 
 every line of both lists.txt must be of the form:  
